@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>49ers News</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>49ers News</h1>
+        <div class="news-container">
+            <button class="nav-button prev" onclick="prevArticle()">❮</button>
+            <div class="article-container">
+                <div id="article-content">
+                    <!-- Articles will be loaded here -->
+                </div>
+            </div>
+            <button class="nav-button next" onclick="nextArticle()">❯</button>
+        </div>
+        <div class="dots-container" id="dots-container">
+            <!-- Navigation dots will be added here -->
+        </div>
+    </div>
+
+    <script>
+        let currentArticleIndex = 0;
+        let articles = [];
+
+        // Fetch articles from the cache file
+        async function loadArticles() {
+            try {
+                const response = await fetch('/news_cache.json');
+                const data = await response.json();
+                articles = data.articles;
+                displayArticle(currentArticleIndex);
+                createDots();
+            } catch (error) {
+                console.error('Error loading articles:', error);
+                document.getElementById('article-content').innerHTML = 
+                    '<div class="error">Error loading articles. Please try again later.</div>';
+            }
+        }
+
+        function displayArticle(index) {
+            const article = articles[index];
+            const content = document.getElementById('article-content');
+            
+            content.innerHTML = `
+                <div class="article">
+                    <h2>${article.title}</h2>
+                    <p class="source">Source: ${article.source}</p>
+                    <p class="description">${article.description || ''}</p>
+                    <div class="article-footer">
+                        <a href="${article.url}" target="_blank" class="read-more">Read Full Article</a>
+                        <span class="date">${formatDate(article.published)}</span>
+                    </div>
+                </div>
+            `;
+
+            // Update active dot
+            updateDots();
+        }
+
+        function nextArticle() {
+            currentArticleIndex = (currentArticleIndex + 1) % articles.length;
+            displayArticle(currentArticleIndex);
+        }
+
+        function prevArticle() {
+            currentArticleIndex = (currentArticleIndex - 1 + articles.length) % articles.length;
+            displayArticle(currentArticleIndex);
+        }
+
+        function createDots() {
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < articles.length; i++) {
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                dot.onclick = () => {
+                    currentArticleIndex = i;
+                    displayArticle(i);
+                };
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateDots() {
+            const dots = document.getElementsByClassName('dot');
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].classList.toggle('active', i === currentArticleIndex);
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Load articles when the page loads
+        window.onload = loadArticles;
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                nextArticle();
+            } else if (e.key === 'ArrowLeft') {
+                prevArticle();
+            }
+        });
+    </script>
+</body>
+</html> 
