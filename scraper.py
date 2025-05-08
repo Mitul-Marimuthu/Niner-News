@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
+# http://localhost:8000/frontend/
+
 class NinersNewsScraper:
     def __init__(self):
         # Load API key from .env file
@@ -11,9 +13,9 @@ class NinersNewsScraper:
         self.api_key = os.getenv('NEWS_API_KEY')
         if not self.api_key:
             raise ValueError("Please set NEWS_API_KEY in your .env file")
-        
+        # callback uri
         self.base_url = "https://newsapi.org/v2/everything"
-        self.articles = []
+        self.articles = [] # loads all of the articles
 
     def fetch_articles(self):
         # Calculate date range (last 7 days)
@@ -22,7 +24,7 @@ class NinersNewsScraper:
         
         # Parameters for the API request
         params = {
-            'q': '("San Francisco 49ers" OR "49ers") AND (NFL OR football)',
+            'q': '("San Francisco 49ers" OR "49ers")',
             'from': start_date.strftime('%Y-%m-%d'),
             'to': end_date.strftime('%Y-%m-%d'),
             'language': 'en',
@@ -44,6 +46,7 @@ class NinersNewsScraper:
                         'source': article['source']['name'],
                         'published': article['publishedAt'],
                         'description': article['description'],
+                        'imageUrl': article.get('urlToImage', ''),
                         'timestamp': datetime.now().isoformat()
                     })
                 print(f"Successfully fetched {len(self.articles)} articles")
