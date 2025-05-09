@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
-
+# expanded
 # http://localhost:8000/frontend/
 
 class NinersNewsScraper:
@@ -78,4 +78,4 @@ class NinersNewsScraper:
 
 if __name__ == "__main__":
     scraper = NinersNewsScraper()
-    scraper.run() 
+    scraper.run()    
