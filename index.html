@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL News</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo-container">
+                <img src="./logos/nfl_logo.png" alt="NFL Logo" class="logo">
+            </div>
+            <div class="team-selector">
+                <div class="team-list" id="team-list">
+                    <!-- Teams will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="container">
+                <h1 id="team-name">49ers News</h1>
+                <div class="news-container">
+                    <button class="nav-button prev" onclick="prevArticle()">❮</button>
+                    <div class="article-container">
+                        <div id="article-content">
+                            <!-- Articles will be loaded here -->
+                        </div>
+                    </div>
+                    <button class="nav-button next" onclick="nextArticle()">❯</button>
+                </div>
+                <div class="dots-container" id="dots-container">
+                    <!-- Navigation dots will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const teams = [
+            { id: 'ARI', name: 'Arizona Cardinals', color: '#97233F' },
+            { id: 'ATL', name: 'Atlanta Falcons', color: '#A71930' },
+            { id: 'BAL', name: 'Baltimore Ravens', color: '#241773' },
+            { id: 'BUF', name: 'Buffalo Bills', color: '#00338D' },
+            { id: 'CAR', name: 'Carolina Panthers', color: '#0085CA' },
+            { id: 'CHI', name: 'Chicago Bears', color: '#0B162A' },
+            { id: 'CIN', name: 'Cincinnati Bengals', color: '#FB4F14' },
+            { id: 'CLE', name: 'Cleveland Browns', color: '#311D00' },
+            { id: 'DAL', name: 'Dallas Cowboys', color: '#003594' },
+            { id: 'DEN', name: 'Denver Broncos', color: '#FB4F14' },
+            { id: 'DET', name: 'Detroit Lions', color: '#0076B6' },
+            { id: 'GB', name: 'Green Bay Packers', color: '#203731' },
+            { id: 'HOU', name: 'Houston Texans', color: '#03202F' },
+            { id: 'IND', name: 'Indianapolis Colts', color: '#002C5F' },
+            { id: 'JAX', name: 'Jacksonville Jaguars', color: '#006778' },
+            { id: 'KC', name: 'Kansas City Chiefs', color: '#E31837' },
+            { id: 'LV', name: 'Las Vegas Raiders', color: '#000000' },
+            { id: 'LAC', name: 'Los Angeles Chargers', color: '#0080C6' },
+            { id: 'LAR', name: 'Los Angeles Rams', color: '#003594' },
+            { id: 'MIA', name: 'Miami Dolphins', color: '#008E97' },
+            { id: 'MIN', name: 'Minnesota Vikings', color: '#4F2683' },
+            { id: 'NE', name: 'New England Patriots', color: '#002244' },
+            { id: 'NO', name: 'New Orleans Saints', color: '#D3BC8D' },
+            { id: 'NYG', name: 'New York Giants', color: '#0B2265' },
+            { id: 'NYJ', name: 'New York Jets', color: '#125740' },
+            { id: 'PHI', name: 'Philadelphia Eagles', color: '#004C54' },
+            { id: 'PIT', name: 'Pittsburgh Steelers', color: '#FFB612' },
+            { id: 'SF', name: 'San Francisco 49ers', color: '#AA0000' },
+            { id: 'SEA', name: 'Seattle Seahawks', color: '#002244' },
+            { id: 'TB', name: 'Tampa Bay Buccaneers', color: '#D50A0A' },
+            { id: 'TEN', name: 'Tennessee Titans', color: '#0C2340' },
+            { id: 'WAS', name: 'Washington Commanders', color: '#5A1414' }
+        ];
+
+        let currentTeamIndex = 27; // Start with 49ers
+        let currentArticleIndex = 0;
+        let articles = [];
+
+        function populateTeams() {
+            const teamList = document.getElementById('team-list');
+            teams.forEach((team, index) => {
+                const teamItem = document.createElement('div');
+                teamItem.className = 'team-item';
+                teamItem.innerHTML = `
+                    <img src="./logos/${team.id}_logo.png" 
+                         alt="${team.name}" 
+                         onerror="this.src='https://static.www.nfl.com/t_headshot_desktop/players-logo/placeholder.png'">
+                         ${team.name}
+                `;
+                teamItem.onclick = () => {
+                    currentTeamIndex = index;
+                    updateTeam();
+                };
+                teamList.appendChild(teamItem);
+            });
+        }
+
+        function updateTeam() {
+            const team = teams[currentTeamIndex];
+            document.getElementById('team-name').textContent = `${team.name} News`;
+            document.documentElement.style.setProperty('--team-color', team.color);
+            
+            // Update team selection
+            const teamItems = document.getElementsByClassName('team-item');
+            Array.from(teamItems).forEach((item, i) => {
+                item.classList.toggle('active', i === currentTeamIndex);
+            });
+
+            // Scroll the active team into view
+            const activeTeam = teamItems[currentTeamIndex];
+            if (activeTeam) {
+                activeTeam.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+
+        async function loadArticles() {
+            try {
+                const response = await fetch('/news_cache.json');
+                const data = await response.json();
+                articles = data.articles;
+                displayArticle(currentArticleIndex);
+                createDots();
+                populateSidebar();
+            } catch (error) {
+                console.error('Error loading articles:', error);
+                document.getElementById('article-content').innerHTML = 
+                    '<div class="error">Error loading articles. Please try again later.</div>';
+            }
+        }
+
+        function populateSidebar() {
+            const articleList = document.getElementById('article-list');
+            articles.forEach((article, index) => {
+                const articleItem = document.createElement('div');
+                articleItem.className = 'sidebar-article';
+                articleItem.innerHTML = `
+                    <span class="article-title">${article.title}</span>
+                `;
+                articleItem.onclick = () => {
+                    currentArticleIndex = index;
+                    displayArticle(index);
+                };
+                articleList.appendChild(articleItem);
+            });
+        }
+
+        function displayArticle(index) {
+            const article = articles[index];
+            const content = document.getElementById('article-content');
+            
+            // Update sidebar highlighting
+            const sidebarArticles = document.getElementsByClassName('sidebar-article');
+            Array.from(sidebarArticles).forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+            
+            const imageHtml = article.imageUrl ? 
+                `<div class="article-image">
+                    <img src="${article.imageUrl}" alt="${article.title}" onerror="this.style.display='none'">
+                </div>` : '';
+
+            content.innerHTML = `
+                <div class="article">
+                    ${imageHtml}
+                    <div class="article-text">
+                        <h2>${article.title}</h2>
+                        <p class="source">Source: ${article.source}</p>
+                        <p class="description">${article.description || ''}</p>
+                        <div class="article-footer">
+                            <a href="${article.url}" target="_blank" class="read-more">Read Full Article</a>
+                            <span class="date">${formatDate(article.published)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updateDots();
+        }
+
+        function nextArticle() {
+            currentArticleIndex = (currentArticleIndex + 1) % articles.length;
+            displayArticle(currentArticleIndex);
+        }
+
+        function prevArticle() {
+            currentArticleIndex = (currentArticleIndex - 1 + articles.length) % articles.length;
+            displayArticle(currentArticleIndex);
+        }
+
+        function createDots() {
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < articles.length; i++) {
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                dot.onclick = () => {
+                    currentArticleIndex = i;
+                    displayArticle(i);
+                };
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateDots() {
+            const dots = document.getElementsByClassName('dot');
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].classList.toggle('active', i === currentArticleIndex);
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        window.onload = () => {
+            populateTeams();
+            updateTeam();
+            loadArticles();
+        };
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                nextArticle();
+            } else if (e.key === 'ArrowLeft') {
+                prevArticle();
+            }
+        });
+    </script>
+</body>
+</html> 
