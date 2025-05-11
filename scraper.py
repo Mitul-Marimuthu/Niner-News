@@ -1,4 +1,5 @@
-import requests 
+import sys
+import requests
 import json
 from datetime import datetime, timedelta
 import os
@@ -6,8 +7,8 @@ from dotenv import load_dotenv
 # expanded
 # http://localhost:8000/frontend/
 
-class NinersNewsScraper:
-    def __init__(self):
+class NFLNewsScraper:
+    def __init__(self, team_name=None):
         # Load API key from .env file
         load_dotenv()
         self.api_key = os.getenv('NEWS_API_KEY')
@@ -16,15 +17,20 @@ class NinersNewsScraper:
         # callback uri
         self.base_url = "https://newsapi.org/v2/everything"
         self.articles = [] # loads all of the articles
+        self.team_name = team_name
+
 
     def fetch_articles(self):
         # Calculate date range (last 7 days)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=7)
         
+        # Create search query based on team name
+        query = f'"{self.team_name}" AND (NFL OR football)'
+        
         # Parameters for the API request
         params = {
-            'q': '("San Francisco 49ers" OR "49ers")',
+            'q': query,
             'from': start_date.strftime('%Y-%m-%d'),
             'to': end_date.strftime('%Y-%m-%d'),
             'language': 'en',
@@ -49,7 +55,7 @@ class NinersNewsScraper:
                         'imageUrl': article.get('urlToImage', ''),
                         'timestamp': datetime.now().isoformat()
                     })
-                print(f"Successfully fetched {len(self.articles)} articles")
+                print(f"Successfully fetched {len(self.articles)} articles for {self.team_name}")
             else:
                 print(f"API returned error: {data.get('message', 'Unknown error')}")
                 
@@ -67,15 +73,17 @@ class NinersNewsScraper:
         with open('news_cache.json', 'w') as f:
             json.dump({
                 'last_updated': datetime.now().isoformat(),
+                'team': self.team_name,
                 'articles': top_articles
             }, f, indent=2)
 
     def run(self):
-        print("Starting to fetch 49ers news...")
+        print(f"Starting to fetch news for {self.team_name}...")
         self.fetch_articles()
         self.save_to_cache()
         print("Fetching complete! Results saved to news_cache.json")
 
 if __name__ == "__main__":
-    scraper = NinersNewsScraper()
+    team_name = sys.argv[1] if len(sys.argv) > 1 else 'San Francisco 49ers'  # Default to 49ers if no team specified
+    scraper = NFLNewsScraper(team_name)
     scraper.run()    
